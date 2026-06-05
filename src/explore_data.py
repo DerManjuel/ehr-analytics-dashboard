@@ -1,6 +1,14 @@
-import pandas as pd
+###
+# Explore the datasets to understand their structure and content.
+###
 
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+
+###
 # load datasets
+###
 patients = pd.read_csv("data/output/csv/patients.csv")
 encounters = pd.read_csv("data/output/csv/encounters.csv")
 conditions = pd.read_csv("data/output/csv/conditions.csv")
@@ -13,13 +21,20 @@ print(encounters.columns)
 print("conditions.columns:")
 print(conditions.columns)
 
+##########################
+# ENCOUNTERS EXPLORATION #
+##########################
+print("========================================================================================================================")
+print("Encounters Columns:")
+print(encounters.columns)
+print("Encounters Descriptions:")
+print(encounters["DESCRIPTION"].unique())
+
 # calculate encounters per patient
 encounters_per_patient = encounters.groupby("PATIENT").size()
 
 print("Encounters per patient:")
 print(encounters_per_patient.head())
-print("Maximum encounters per patient:")
-print(encounters_per_patient.max())
 
 # convert to DataFrame for better visualization
 encounters_per_patient = encounters_per_patient.reset_index()
@@ -30,8 +45,6 @@ encounters_per_patient.columns = [
 ]
 
 # how many patients need frequent care?
-import plotly.express as px
-
 fig = px.histogram(
     encounters_per_patient,
     x="encounter_count",
@@ -41,22 +54,30 @@ fig = px.histogram(
 
 fig.write_html("docs/encounters_per_patient.html")
 
-# conditions exploration
-print("Conditions Description:")
+##############################
+### CONDITIONS EXPLORATION ###
+##############################
+print("========================================================================================================================")
+print("Conditions Columns:")
+print(conditions.columns)
+print("Conditions Descriptions:")
 print(conditions["DESCRIPTION"].unique())
+
+print("Condition description counts:")
 print(
     conditions["DESCRIPTION"]
     .value_counts()
     .head(100)
 )
 
-# top conditions
+# top conditions extracted for plotting
 top_conditions = (
     conditions["DESCRIPTION"]
     .value_counts()
     .head(10)
 )
 
+# plot top conditions
 fig = px.bar(
     x=top_conditions.values,
     y=top_conditions.index,
@@ -66,17 +87,28 @@ fig = px.bar(
 
 fig.write_html("docs/top_conditions.html")
 
-
+# extract condition categories (usually in parentheses)
 conditions["category"] = conditions["DESCRIPTION"].str.extract(r"\(([^)]+)\)", expand=False).fillna("unknown")
 categories = sorted(conditions["category"].dropna().unique())
+print("----------------------------------------------------------------------------------------------------------------------------")
 print("Condition categories:")
 print(categories)
+print("Condition category counts:")
 print(conditions["category"].value_counts())
 
-
+# visualize category distribution
 category_counts = conditions["category"].value_counts()
 
+fig = px.bar(
+    x=category_counts.values,
+    y=category_counts.index,
+    orientation="h",
+    title="Condition Categories"
+)
 
+fig.write_html("docs/condition_categories.html")
+
+# helper function to plot top conditions per category type
 def plot_top_category(df, category, n=10, title=None):
     subset = df[df["category"] == category]
     top = subset["DESCRIPTION"].value_counts().head(n)
@@ -96,65 +128,57 @@ def plot_top_category(df, category, n=10, title=None):
 
     return fig
 
-
-cat_counts = conditions["category"].value_counts()
-
-fig = px.bar(
-    x=cat_counts.values,
-    y=cat_counts.index,
-    orientation="h",
-    title="Condition Categories"
-)
-
-fig.write_html("docs/condition_categories.html")
-
-
+# plot top conditions for each category
 plot_top_category(conditions, "disorder", title="Top Disorders")
 plot_top_category(conditions, "finding", title="Top Findings")
 plot_top_category(conditions, "situation", title="Top Situations")
 
+##############################
+### PATIENT EXPLORATION ###
+##############################
+print("========================================================================================================================")
+print("Patient Columns:")
+print(patients.columns)
 
+patients["BIRTHDATE"] = pd.to_datetime(patients["BIRTHDATE"], errors="coerce")
+patients["DEATHDATE"] = pd.to_datetime(patients["DEATHDATE"], errors="coerce")
 
+today = pd.to_datetime("today")
 
-
-"""disorders = conditions[conditions["category"] == "disorder"]
-top10_disorders = disorders["DESCRIPTION"].value_counts().head(10)
-
-fig = px.bar(
-    x=top10_disorders.values,
-    y=top10_disorders.index,
-    orientation="h",
-    title="Top Disorders"
+patients["age"] = (
+    (patients["DEATHDATE"].fillna(today) - patients["BIRTHDATE"])
+    .dt.days / 365.25
 )
 
-fig.write_html("docs/top_disorders.html")
+avg_age = patients["age"].mean()
+print(f"Average patient age: {avg_age:.2f} years "
+      f"with max age of {patients['age'].max():.2f} years "
+      f"and min age of {patients['age'].min():.2f} years"
+    )
 
-
-
-finding = conditions[conditions["category"] == "finding"]
-top10_findings = finding["DESCRIPTION"].value_counts().head(10)
-
-fig = px.bar(
-    x=top10_findings.values,
-    y=top10_findings.index,
-    orientation="h",
-    title="Top Findings"
+fig = px.histogram(
+    patients,
+    x="age",
+    nbins=20,
+    title="Overall Patient Age Distribution"
 )
 
-fig.write_html("docs/top_findings.html")
+fig.write_html("docs/patient_ages.html")
 
+# add status column based on DEATHDATE
+patients["status"] = patients["DEATHDATE"].isna().map({
+    True: "Alive",
+    False: "Deceased"
+})
 
-
-situation = conditions[conditions["category"] == "situation"]
-top10_situations = situation["DESCRIPTION"].value_counts().head(10)
-
-fig = px.bar(
-    x=top10_situations.values,
-    y=top10_situations.index,
-    orientation="h",
-    title="Top Situations"
+# visualize age distribution by status
+fig = px.histogram(
+    patients,
+    x="age",
+    color="status",
+    nbins=20,
+    barmode="overlay",
+    title="Age Distribution: Alive vs Deceased"
 )
 
-fig.write_html("docs/top_situations.html")
-
-"""
+fig.write_html("docs/patient_age_by_status.html")
