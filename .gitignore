@@ -1,0 +1,33 @@
+# Conda envs
+env/
+venv/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files (optional later)
+data/generated/
+
+# Streamlit cache
+.streamlit/
+
+# Logs
+*.log
+
+# data files
+data/
+*.csv
+
+# generator
+synthea-with-dependencies.jar
