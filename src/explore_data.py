@@ -182,3 +182,49 @@ fig = px.histogram(
 )
 
 fig.write_html("docs/patient_age_by_status.html")
+
+# create age groups for further analysis
+patients["age_group"] = pd.cut(
+    patients["age"],
+    bins=[0, 18, 35, 50, 65, 120],
+    labels=["0-18", "19-35", "36-50", "51-65", "65+"]
+)
+
+# merge conditions with patients to analyze age distribution for specific conditions
+merged = conditions.merge(
+    patients[["Id", "age_group"]],
+    left_on="PATIENT",
+    right_on="Id",
+    how="left"
+)
+
+# filter only disorders for clearer analysis
+disorders = merged[merged["category"] == "disorder"]
+
+# top disorders by age group
+top_by_age = (
+    disorders
+    .groupby(["age_group", "DESCRIPTION"])
+    .size()
+    .reset_index(name="count")
+)
+
+# extract top 5 conditions for each age group
+top5_per_group = (
+    top_by_age
+    .sort_values(["age_group", "count"], ascending=[True, False])
+    .groupby("age_group")
+    .head(5)
+)
+
+# visualize top conditions by age group
+fig = px.bar(
+    top5_per_group,
+    x="count",
+    y="DESCRIPTION",
+    color="age_group",
+    orientation="h",
+    title="Top Disorders by Age Group"
+)
+
+fig.write_html("docs/top_disorders_by_age_group.html")

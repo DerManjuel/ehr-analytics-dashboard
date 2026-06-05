@@ -23,3 +23,5 @@ During the data exploration multiple plots are saved in docs to be quickly acces
 encounter.csv shows every encounter processed. This enables easy computing of the encounters-per-patient, which shows how often a patient needs medical care. This is also plottet as html in docs.
 
 patients.csv offers other difficulties like the age distribution. Because we only have BIRTHDATE and DEATHDATE we firstly need to add a status field defining the patient as alive or deceased. After that we can calculate the age of living patients and the age at death of deceased patients. Now the histograms for patient age distributions can be plotted, even the distribution at what age patients die.
+
+By merging patients with conditions, disorders per age group can be extracted. Also shown in top_disorders_per_age_group.html.
