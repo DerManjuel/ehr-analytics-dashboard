@@ -12,3 +12,5 @@ Clinical analytics dashboard built with Streamlit and synthetic Synthea EHR data
 This command generates a realistic dataset with 100 patients with csv export enabled:
 
 '''java -jar synthea-with-dependencies.jar -p 100 --exporter.csv.export=true'''
+
+While exploring the synthetic EHR data, I encountered socioeconomic and employment concepts mixed into the clinical condition dataset, which required semantic filtering and categorization.
